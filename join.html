@@ -1,0 +1,166 @@
+
+<html>
+	<head>
+		<style>
+
+			#buzz_portion{
+				display: none;
+			}
+			#admin_prompt{
+				display: none;
+			}
+			#buzz{
+				color: green;
+				display: block;
+				height: 200px;
+				width: 300px;
+			}
+			#buzz_invalid{
+				display: none;
+				height: 200px;
+				width: 300px;
+				color: red;
+				border: 1px solid red;
+				vertical-align: middle;
+				text-align: center;
+			}
+			#team_one_data{
+				display: inline;
+			}
+			#team_two_data{
+				display: inline;
+			}
+			#team_one_name{
+				float: left;
+			}
+			#team_two_name{
+				float: left;
+			}
+			#admin_buzz{
+				display: none;
+			}
+
+
+		</style>
+		<title> QUIZ BOWL </title>
+	</head>
+
+	<body>
+		<div id="title_element"> CRANBROOK QUIZ BOWL </div>
+		<div id="login_portion">
+
+			<div id="name_element"> Name: </div>
+
+			<input type="text" id="username_input" placeholder="Username">
+			<input type="button" id="submit_input" value="Enter">
+		</div>
+
+		<div id="username_slot"></div>
+
+		<div id="buzz_portion">
+			<div id="team_one_data">
+			<div id="team_one_name">Team One: </div> <div id="team_one_score">0</div>
+			</div>
+			<div id="team_two_data">
+			<div id="team_two_name">Team Two: </div> <div id="team_two_score">0</div>
+			</div>
+
+			<input type="button" id="buzz" value="BUZZ">
+			<div id="buzz_invalid"></div>
+		</div>
+
+		<div id="admin_buzz"></div>
+
+		<div id='admin_prompt'>
+			<input type='text' id='admin_input' placeholder="COMMAND THE PEASANTS">
+			<input type='button' id="admin_submit" value='INVOKE YOUR WRATH'>
+		</div>
+
+
+	</body>
+	
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="http://code.jquery.com/jquery-2.1.1.js"></script>
+	
+	<script type="text/javascript">
+		var socket = io();
+		var username = "";
+
+		function resetBuzzer(){
+			$('#buzz').css("display", "block");
+			$('#buzz_invalid').css("display", "none");
+		}
+
+		function setBuzzer(buzzer_username){
+			$('#buzz').css("display", "none");
+			$('#buzz_invalid').css("display", "table-cell");
+			document.getElementById("buzz_invalid").innerHTML = "BUZZED: " + buzzer_username;
+
+		}
+
+		document.getElementById('buzz').addEventListener('click', function(){
+			socket.emit('buzz', username);
+		});
+
+		document.getElementById('submit_input').addEventListener('click', function(){
+			var username_value = document.getElementById('username_input').value;
+			socket.emit('new_username_request', username_value);
+		});
+
+		socket.on('success_username', function(input_username){
+			username=input_username;
+			$('#login_portion').css("display", "none");
+			$('#buzz_portion').css("display", "inline");
+			document.getElementById('username_slot').innerHTML = "Username: " + username;
+		});
+
+		socket.on('admin_access', function(){
+			username = 'IAMROYALTY';
+			$('#login_portion').css("display", "none");
+			$('#buzz_portion').css("display", "inline");
+			$('#buzz').css("display", "none");
+			$('#buzz_invalid').css("display", "none");
+			$('#admin_buzz').css("display", "block");
+			$('#admin_prompt').css("display", "inline");
+		});
+
+		socket.on('first_buzz', function(buzz_username){
+			if(username != 'IAMROYALTY'){
+				setBuzzer(buzz_username);
+			}
+			document.getElementById('admin_buzz').innerHTML = "BUZZED BY: " + buzz_username;
+		});	
+
+		socket.on('new_team_one_name', function(new_name){
+			document.getElementById('team_one_name').innerHTML = new_name;
+		});
+
+		socket.on('new_team_two_name', function(new_name){
+			document.getElementById('team_two_name').innerHTML = new_name;
+		});
+
+		socket.on('next_question', function(){
+			if(username != "IAMROYALTY"){
+				resetBuzzer();
+			}
+			document.getElementById('admin_buzz').innerHTML = "";
+		});
+
+		socket.on('new_team_two_score', function(score){
+			document.getElementById('team_two_score').innerHTML = score+'';
+		});
+
+		socket.on('new_team_one_score', function(score){
+			document.getElementById('team_one_score').innerHTML = score+'';
+		});
+
+		document.getElementById('admin_submit').addEventListener('click',function(){
+			var submitted_command = document.getElementById('admin_input').value;
+			socket.emit('admin_command', submitted_command);
+		});
+
+
+
+	</script>
+
+</html>
